@@ -1,0 +1,50 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AncientGiants</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+</head>
+<body>
+    <div class="space">
+        <header class="header">
+            <h1 class="company_name"><a href="{% url 'index' %}" style="text-decoration: none; color: inherit;">AncientGiants</a></h1>
+        </header>
+
+        <div class="search-and-cart">
+            <form action="{% url 'index' %}" method="get" class="search-form">
+                <input type="text" class="search-bar" name="q" value="{{ query }}" placeholder="Поиск по сайту..." required>
+            </form>
+            <div class="cart">
+                <a href="{% url 'bid' %}">
+                    <img src="http://127.0.0.1:9000/zzz/png7.png" alt="Cart Icon">
+                    <span class="cart-count">2</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="container">
+            {% for item in results %}
+                <div class="card">
+                    <div class="info">
+                        <img src="{{item.image}}" alt="{{ item.name }}" class="image">
+                        <p class="title">{{ item.name }}</p>
+                        <p class="description">Начало: {{ item.start }}<br>Конец: {{ item.end }}</p>
+                    </div>
+                    <div class="down">
+                        <a href="{% url 'getDetailPage' item.id %}" class="card-button">Подробнее</a>
+                    </div>
+                </div>
+            {% empty %}
+                <p>Ничего не найдено.</p>
+            {% endfor %}
+        </div>
+
+        <div class="space"></div>
+    </div>
+</body>
+</html>

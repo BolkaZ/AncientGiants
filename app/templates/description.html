@@ -1,0 +1,21 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+    <div class="period-card">
+        <div class="period-image">
+            <img src="{{ item.image }}" alt="{{ item.name }}">
+        </div>
+        <div class="period-info">
+            <h2>{{ item.name }}</h2>
+            <div class="period-dates">
+                <p><strong>Начало:</strong> {{ item.start }}</p>
+                <p><strong>Конец:</strong> {{ item.end }}</p>
+            </div>
+            <p>{{ item.detail_text }}</p>
+            <form action="{% url 'add_to_bid' item.id %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="card-button">Добавить в заявку</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

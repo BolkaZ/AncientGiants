@@ -12,10 +12,6 @@
                 <p><strong>Конец:</strong> {{ item.end }}</p>
             </div>
             <p>{{ item.detail_text }}</p>
-            <form action="{% url 'add_to_bid' item.id %}" method="POST">
-                {% csrf_token %}
-                <button type="submit" class="card-button">Добавить в заявку</button>
-            </form>
         </div>
     </div>
 {% endblock %}

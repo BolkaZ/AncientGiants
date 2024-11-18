@@ -49,7 +49,9 @@ class Bid(models.Model):
         ('REJECTED', 'Отклонён'),
     )
     status = models.CharField(max_length=15, choices=STATUS_CHOICES, verbose_name='Статус', default='DRAFT')
-
+    
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
 
     def __str__(self):
         return f"Bid for {self.period.name} by {self.user.username if self.user else 'No User'}"

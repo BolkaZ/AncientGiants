@@ -41,3 +41,17 @@ class BidGetSerializer(serializers.ModelSerializer):
             '__all__'
         )
 
+class BidListSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+    moderator = UserSerializer()
+
+    class Meta:
+        model = Bid
+        fields = (
+                'id', 
+                'status', 
+                'created_at', 
+                'updated_at', 
+                'user', 
+                'moderator'
+            )

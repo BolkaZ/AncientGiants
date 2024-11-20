@@ -112,3 +112,19 @@ class PeriodInBidCreateView(APIView):
 
 
 
+class BidListView(APIView):
+    def get(self, request):
+        status_filter = request.query_params.get('status')
+        date_start = request.query_params.get('date_start')
+        date_end = request.query_params.get('date_end')
+
+        bids = Bid.objects.exclude(status__in=['DRAFT', 'ON_DELETE'])
+
+        if status_filter:
+            bids = bids.filter(status=status_filter)
+        if date_start and date_end:
+            bids = bids.filter(created_at__range=[date_start, date_end])
+
+        serializer = BidListSerializer(bids, many=True)
+        return Response(serializer.data, status=200)
+        

@@ -14,7 +14,7 @@ configuration_elements = [
         ' 201,3 миллиона лет назад произошло еще одно массовое вымирание, когда климат изменился. Таким образом, завершился триасовый период.',
         'end': '201 млн лет назад',
         'id': 1,
-        'image': 'http://127.0.0.1:9000/zzz/png1.webp',
+        'image': 'http://127.0.0.1:9000/paleoproject/png1.webp',
         'name': 'Триасовый период',
         'start': '252 млн лет назад'
     },
@@ -24,7 +24,7 @@ configuration_elements = [
         ' Затем по суше бродили динозавры в юрском периоде. Они обозначили буквально большой путь. Апатозавр, также известный как Бронтозавр, весил до 30 тонн и имел длину шеи до 22 метров. Затем целофизы — хищные динозавры. Они ходят на двух ногах, их длина составляет 2 метра, а вес - 23 килограмма. На землю добрался и первый пернатый динозавр – археоптерикс. Растительноядный брахиозавр имеет рост до 16 метров и вес более 80 тонн. При этом длина Диплодока тоже была 26 метров.',
         'end': '145 млн лет назад',
         'id': 2,
-        'image': 'http://127.0.0.1:9000/zzz/png2.jpg',
+        'image': 'http://127.0.0.1:9000/paleoproject/png2.jpg',
         'name': 'Юрский период',
         'start': '201 млн лет назад'
     },
@@ -34,7 +34,7 @@ configuration_elements = [
         ' Меловой период также закончился одним из самых известных событий массового вымирания. Это мел-палеогеновое (K-Pg) вымирание, уничтожившее большинство динозавров и многие другие виды.',
         'end': '66 млн лет назад',
         'id': 3,
-        'image': 'http://127.0.0.1:9000/zzz/png3.jpg',
+        'image': 'http://127.0.0.1:9000/paleoproject/png3.jpg',
         'name': 'Меловой период',
         'start': '145 млн лет назад'
     }
@@ -62,7 +62,7 @@ def bid_view(request):
 
 
 def index(request):
-    query = request.GET.get('periods', '')
+    query = request.GET.get('q', '')
     results = [item for item in configuration_elements if query.lower() in item['name'].lower()]
 
 
@@ -73,7 +73,10 @@ def index(request):
 
 
 def getDetailPage(request, id):
-    item = get_object_or_404(Period, id=id)
+    item = next((el for el in configuration_elements if el['id'] == id), None)
+    
+    if item is None:
+        return redirect('some-error-page')
 
     return render(request, 'description.html', {'item': item})
 

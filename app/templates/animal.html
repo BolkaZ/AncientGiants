@@ -8,7 +8,7 @@
     {% if cart_items %}
         {% for item in cart_items %}
         <div class="cart-card">
-            {% comment %} <img src="http://127.0.0.1:9000/zzz/png{{ item.id }}.jpg" alt="{{ item.name }}" class="cart-image"> {% endcomment %}
+            {% comment %} <img src="http://127.0.0.1:9000/paleoproject/png{{ item.id }}.jpg" alt="{{ item.name }}" class="cart-image"> {% endcomment %}
             <p class="cart-title">Заявка: {{ item.name }}</p>
             <p class="cart-quantity">Количество найденных: {{ item.quantity }}</p>
         </div>

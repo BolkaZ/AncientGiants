@@ -7,26 +7,27 @@
     <div class="cart-container">
         <h2>Заявка ID: {{ order.id }}</h2>
         <h2>Статус: {{ order.get_status_display }}</h2>
-        {% for period in order.period.all %}
+        {% for bid_item in order.periods.all %}
         
         <div class="cart-layout">
             <!-- Карточка периода -->
             <div class="period-cart-card">
-                <h3>{{ period.name }}</h3>
-                <img src="{{ period.image }}" alt="Картинка периода" class="period-cart-image">
+                <h3>{{ bid_item.period.name }}</h3>
+                <img src="{{ bid_item.period.image }}" alt="Картинка периода" class="period-cart-image">
                 <p>Найдено животных: {{ period.found_quantity }}</p>
             </div>
             
             <!-- Карточки животных -->
             <div class="animals-list">
-                {% if period.animals.exists %}
-                    {% for item in period.animals.all %}
+                {% if bid_item.period.animals.exists %}
+                    {% for item in bid_item.period.animals.all %}
                     <div class="animal-card">
                         <p class="animal-name">Животное: {{ item.name }}</p>
                         <p class="animal-group">Отряд: {{ item.group }}</p>
                         <p class="animal-quantity">Количество найденных: {{ item.quantity_found }}</p>
                     </div>
                     {% endfor %}
+                    <p class="animal-quantity">Количество экземпляров: {{ bid_item.count }}</p>
                 {% else %}
                     <p>Нет животных</p>
                 {% endif %}

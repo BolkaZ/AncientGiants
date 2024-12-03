@@ -1,6 +1,6 @@
 import uuid
 from django.shortcuts import get_object_or_404, redirect
-from .models import Period, Bid, Animal
+from .models import Period, Bid, Animal, BidPeriod
 from django.contrib.auth.models import User
 from django.shortcuts import redirect
 from django.shortcuts import render
@@ -24,9 +24,13 @@ def add_to_bid(request, period_id):
 
     period = Period.objects.get(id = period_id)
 
-    order.period.add(period)
+    # order.period.add(period)
 
-    order.save()
+    # order.save()
+
+    bid_period = BidPeriod.objects.filter(bid=order, period=period)
+    if not bid_period.exists():
+        BidPeriod.objects.create(bid=order, period=period)
 
     return redirect('getDetailPage', id=period_id)
 
@@ -35,7 +39,7 @@ def bid_view(request):
 
     orders = Bid.objects.filter(session_id = request.session.get('session_id'), status = 'DRAFT')
 
-    if orders.exists():
+    if orders.exists() and orders.first().periods.all():
         return render(request, 'animal.html', context = {'order': orders.first()})
 
     else:

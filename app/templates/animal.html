@@ -3,31 +3,34 @@
 {% load static %}
 
 {% block content %}
-<div class="cart-container">
-    <h2>Заявка ID: {{ order_id }}</h2>
-    {% if cart_items %}
-        {% for item in cart_items %}
-        <div class="cart-card">
-            {% comment %} <img src="http://127.0.0.1:9000/paleoproject/png{{ item.id }}.jpg" alt="{{ item.name }}" class="cart-image"> {% endcomment %}
-            <p class="cart-title">Заявка: {{ item.name }}</p>
-            <p class="cart-quantity">Количество найденных: {{ item.quantity }}</p>
+<div class="cart-page">
+    <div class="cart-container">
+        <h2>Заявка ID: {{ order_id }}</h2>
+        
+        <div class="cart-layout">
+            <div class="period-cart-card">
+                <h3>{{ period.name }}</h3>
+                {% if period.image %}
+                    <img src="{{ period.image }}" alt="Картинка периода" class="period-cart-image">
+                {% else %}
+                    <p>Изображение недоступно</p>
+                {% endif %}
+                <p>Найдено животных: {{ period.found_quantity }}</p>
+            </div>
+            
+            <div class="animals-list">
+                {% if order_items %}
+                    {% for item in order_items %}
+                    <div class="animal-card">
+                        <p class="animal-name">Животное: {{ item.name }}</p>
+                        <p class="animal-quantity">Количество найденных: {{ item.quantity }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Нет животных в этом заказе</p>
+                {% endif %}
+            </div>
         </div>
-        {% endfor %}
-    {% else %}
-        <p>Корзина пуста.</p>
-    {% endif %}
+    </div>
 </div>
-
-
-{% comment %} <div class="order-form">
-    <form method="POST">
-        <label for="name">Ваше имя:</label>
-        <input type="text" id="name" name="name" required><br>
-
-        <label for="email">Ваша почта:</label>
-        <input type="email" id="email" name="email" required><br>
-    </form>
-</div> {% endcomment %}
-
-
 {% endblock %}

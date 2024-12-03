@@ -54,10 +54,7 @@ orders = {
     ]
 }
 
-def bid_view(request):
-    order_id = 0 
-    cart_items = orders[order_id] 
-    return render(request, 'animal.html', {'cart_items': cart_items, 'order_id': order_id})
+
 
 
 
@@ -80,3 +77,19 @@ def getDetailPage(request, id):
 
     return render(request, 'description.html', {'item': item})
 
+def bid_view(request):
+    period_id = 1
+    
+    order_items = orders.get(0, []) 
+    
+    period = next((item for item in configuration_elements if item['id'] == period_id), None)
+    
+    if not period:
+        period = {'name': 'Неизвестный период', 'image': '', 'found_quantity': 0}
+    
+    period['found_quantity'] = sum(item['quantity'] for item in order_items)
+    
+    return render(request, 'animal.html', {
+        'order_items': order_items,
+        'period': period
+    })

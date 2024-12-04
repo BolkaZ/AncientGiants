@@ -8,10 +8,6 @@ from django.db import connection
 
 USER_ID = 1
 
-
-from django.shortcuts import redirect, get_object_or_404
-from .models import Period, Bid
-
 def add_to_bid(request, period_id):
     orders = Bid.objects.filter(status = 'DRAFT', session_id = request.session.get('session_id'))
     order = None

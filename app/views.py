@@ -49,10 +49,6 @@ def bid_view(request):
 
 def clear_bid(request):
 
-    #bid = get_object_or_404(Bid, session_id=request.session.get('session_id'), status='DRAFT')
-
-    #orm для соединения с бд
-    #Bid.objects.raw(f"update bid status='ON_DELETE' where session_id={request.session.get('session_id')} and status='DRAFT'")
 
     with connection.cursor() as database:
         database.execute(f"update app_bid set status = 'ON_DELETE' where session_id='{request.session.get('session_id')}' and status='DRAFT'")

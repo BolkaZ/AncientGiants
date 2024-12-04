@@ -79,11 +79,4 @@ def getDetailPage(request, id):
     return render(request, 'description.html', {'item': item})
 
 
-def cart(request):
-    orders = Bid.objects.filter(session_id = request.session.get('session_id'), status = 'DRAFT')
 
-    if orders.exists():
-        return render(request, 'animal.html')
-
-    else:
-        return redirect('index')

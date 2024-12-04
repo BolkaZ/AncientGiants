@@ -39,7 +39,7 @@ def bid_view(request):
 
     orders = Bid.objects.filter(session_id = request.session.get('session_id'), status = 'DRAFT')
 
-    if orders.exists():
+    if orders.exists() and orders.first().periods.all():
         return render(request, 'animal.html', context = {'order': orders.first()})
 
     else:
@@ -48,6 +48,8 @@ def bid_view(request):
 
 
 def clear_bid(request):
+
+
     with connection.cursor() as database:
         database.execute(f"update app_bid set status = 'ON_DELETE' where session_id='{request.session.get('session_id')}' and status='DRAFT'")
 
@@ -89,4 +91,3 @@ def cart(request):
 
     else:
         return redirect('index')
-

@@ -9,45 +9,39 @@ from django.db import connection
 USER_ID = 1
 
 def add_to_bid(request, period_id):
-    orders = Bid.objects.filter(status = 'DRAFT', session_id = request.session.get('session_id'))
-    order = None
+    bid_id = request.POST['bid_id']
 
-    if not orders.exists():
-        order = Bid.objects.create(session_id = request.session.get('session_id'), status = 'DRAFT')
-
+    if not bid_id:
+        order = Bid.objects.create(status = 'DRAFT')
+        request.session['bid_id'] = order.id
     else:
-        order = orders.first()
+        order = Bid.objects.filter(id=int(bid_id)).first()
 
     period = Period.objects.get(id = period_id)
-
-    # order.period.add(period)
-
-    # order.save()
 
     bid_period = BidPeriod.objects.filter(bid=order, period=period)
     if not bid_period.exists():
         BidPeriod.objects.create(bid=order, period=period)
 
-    return redirect('getDetailPage', id=period_id)
+    return redirect('index')
 
 
-def bid_view(request):
+def bid_view(request, bid_id):
+    order = Bid.objects.filter(id=bid_id, status='DRAFT').first()
 
-    orders = Bid.objects.filter(session_id = request.session.get('session_id'), status = 'DRAFT')
-
-    if orders.exists() and orders.first().periods.all():
-        return render(request, 'animal.html', context = {'order': orders.first()})
+    if order and order.periods.all():
+        return render(request, 'animal.html', context = {'order': order})
 
     else:
         return redirect('index')
 
 
 
-def clear_bid(request):
-
+def clear_bid(request, bid_id):
+    request.session['bid_id'] = ''
 
     with connection.cursor() as database:
-        database.execute(f"update app_bid set status = 'ON_DELETE' where session_id='{request.session.get('session_id')}' and status='DRAFT'")
+        database.execute(f"update app_bid set status = 'ON_DELETE' where id='{bid_id}'")
 
 
     return redirect('index')
@@ -55,9 +49,6 @@ def clear_bid(request):
 
 
 def index(request):
-    if not request.session.get('session_id'):
-        request.session['session_id'] = str(uuid.uuid4())
-
     query = request.GET.get('q', '')
 
     if query:
@@ -77,14 +68,3 @@ def getDetailPage(request, id):
     item = get_object_or_404(Period, id=id)
 
     return render(request, 'description.html', {'item': item})
-
-
-def cart(request):
-    orders = Bid.objects.filter(session_id = request.session.get('session_id'), status = 'DRAFT')
-
-    if orders.exists():
-        return render(request, 'animal.html')
-
-    else:
-        return redirect('index')
-

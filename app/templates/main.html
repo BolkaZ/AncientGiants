@@ -20,15 +20,21 @@
                 <input type="text" class="search-bar" name="q" value="{{ query }}" placeholder="Поиск по сайту..." required>
             </form>
             <div class="cart">
-                <a href="{% url 'bid' %}">
+                {% if request.session.bid_id %}
+                <a href="{% url 'bid' request.session.bid_id %}">
                     <img src="http://127.0.0.1:9000/paleoproject/png7.png" alt="Cart Icon">
                 </a>
+                {% else %}
+                <a href="#">
+                    <img src="http://127.0.0.1:9000/paleoproject/png7.png" alt="Cart Icon">
+                </a>
+                {% endif %}
             </div>
         </div>
 
         <div class="container">
             {% for item in results %}
-                <div class="card">
+                <div class="card" style="height: 600px;">
                     <div class="info">
                         <img src="{{item.image}}" alt="{{ item.name }}" class="image">
                         <p class="title">{{ item.name }}</p>
@@ -37,6 +43,11 @@
                     <div class="down">
                         <a href="{% url 'getDetailPage' item.id %}" class="card-button">Подробнее</a>
                     </div>
+                    <form action="{% url 'add_to_bid' item.id %}" method="POST">
+                        {% csrf_token %}
+                        <input type="hidden" name="bid_id" value="{{ request.session.bid_id }}">
+                        <button type="submit" class="card-button">Добавить в заявку</button>
+                    </form>
                 </div>
             {% empty %}
                 <p>Ничего не найдено.</p>

@@ -5,13 +5,15 @@ from django.contrib import admin
 from django.urls import include
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
+
     path('api/', include('api.urls')),
     
     path('', index, name='index'),
     path('detail/<int:id>/', getDetailPage, name='getDetailPage'),
-    path('bid/', bid_view, name='bid'),
+    path('bid/<int:bid_id>/', bid_view, name='bid'),
     path('add-to-bid/<int:period_id>/', views.add_to_bid, name='add_to_bid'),
-    path('admin/', admin.site.urls),
-    path('clear_bid/', views.clear_bid, name='clear_bid'),
+    path('clear_bid/<int:bid_id>/', views.clear_bid, name='clear_bid'),
+
     #path('bid/<int:bid_id>/', bid_view, name='bid_detail'),  # для конкретной заявки
 ]

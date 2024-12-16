@@ -8,6 +8,12 @@
         <!-- <h2>Заявка ID: {{ order.id }}</h2> -->
         <h2>Статус: {{ order.get_status_display }}</h2>
 
+        {% if order.comment %}
+        <h2>Комментарий к заявке: {{ order.comment }}</h2>
+        {% else %}
+        <h2>Комментарий отсутствует</h2>
+        {% endif %}
+
         <h2>Добавить животное:</h2>
         <form action="">
             <div class="wrapper" style="border: 2px solid rgb(143, 30, 30); border-radius:20px; padding: 10px; width: 95%;">
@@ -28,7 +34,11 @@
             <img style="width:70px;height:70px; margin-right: 10px;" src="{{ bid_item.period.image }}" alt="Картинка периода" class="period-cart-image">
             <div  style="height:70px; width:100%;" class="period-cart-card">
                 <h3>{{ bid_item.period.name }}</h3>
-                <p>Найдено животных: {{ period.found_quantity }}</p>
+                {% if bid_item.comment %}
+                <p>Комментарий к периоду: {{ bid_item.comment }}</p>
+                {% else %}
+                <p>Комментарий отсутствует</p>
+                {% endif %}
             </div>
             
             <!-- Карточки животных -->

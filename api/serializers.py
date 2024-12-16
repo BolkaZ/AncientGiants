@@ -2,15 +2,64 @@ from django.contrib.auth.models import User
 from rest_framework import serializers
 from app.models import *
 
+class PeriodForBidSerializers(serializers.ModelSerializer):
+    comment = serializers.SerializerMethodField()
+
+    def get_comment(self, obj):
+        bid_period = BidPeriod.objects.get(bid_id=self.context.get("bid_id",0), period=obj)
+        return bid_period.comment if bid_period else ""
+
+    class Meta:
+        model = Period
+
+        fields = (
+            'id',
+            'name',
+            'image',
+            'comment'
+        )
+
 class PeriodGetSerializers(serializers.ModelSerializer):
     class Meta:
         model = Period
 
-        fields = ('__all__')
+        fields = (
+            'id',
+            'name',
+            'detail_text',
+            'start',
+            'end',
+            'image'
+        )
+
+
+class PeriodListSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Period
+        fields = (
+            'id',
+            'name',
+            'start',
+            'end',
+            'image'
+        )
 
 
 class PeriodInputSerializer(serializers.ModelSerializer):
-    animals = serializers.PrimaryKeyRelatedField(queryset=Animal.objects.all(), many=True)
+
+    class Meta:
+        model = Period
+        fields = (
+            'name',
+            'detail_text',
+            'start',
+            'end'
+        )
+
+
+class PeriodUpdateInputSerializer(serializers.ModelSerializer):
+    is_active = serializers.BooleanField(required=True)
 
     class Meta:
         model = Period
@@ -19,32 +68,42 @@ class PeriodInputSerializer(serializers.ModelSerializer):
             'detail_text',
             'start',
             'end',
-            'animals'
-        )
-
-
-class PeriodUpdateInputSerializer(serializers.ModelSerializer):
-    animals = serializers.PrimaryKeyRelatedField(queryset=Animal.objects.all(), many=True)
-
-    class Meta:
-        model = Period
-        fields = (
-            '__all__'
+            'is_active'
         )
 
 
 class BidGetSerializer(serializers.ModelSerializer):
     periods = serializers.SerializerMethodField()
+    status = serializers.SerializerMethodField()
+
+    def get_status(self, obj):
+        return obj.get_status_display()
 
     def get_periods(self, obj):
         period_ids = obj.periods.all().values_list('period_id', flat=True)
         periods = Period.objects.filter(id__in=period_ids)
-        return PeriodGetSerializers(periods, many=True).data
+        return PeriodForBidSerializers(periods, many=True, context={"bid_id":obj.id}).data
 
     class Meta:
         model = Bid
         fields = (
-            '__all__'
+            'id',
+            'status',
+            'periods'
+        )
+
+class BidGetFullInfoSerializer(BidGetSerializer):
+    class Meta:
+        model = Bid
+        fields = (
+            'id',
+            'status',
+            'periods',
+            'created_at',
+            'to_form_at',
+            'updated_at',
+            'finished_at',
+            'comment'
         )
 
 class BidListSerializer(serializers.ModelSerializer):
@@ -74,6 +133,7 @@ class BidUpdateInputSerializer(serializers.ModelSerializer):
         )
 
 class BidModerationInputSerializer(serializers.ModelSerializer):
+    status = serializers.CharField()
 
     class Meta:
         model = Bid
@@ -84,12 +144,16 @@ class BidModerationInputSerializer(serializers.ModelSerializer):
 class ImageInputSerializer(serializers.Serializer):
     image = serializers.ImageField()
 
+
 class BidPeriodUpdateInputSerializer(serializers.ModelSerializer):
+    bid_id = serializers.IntegerField()
+    comment = serializers.CharField()
 
     class Meta:
         model = BidPeriod
         fields = (
-            "count",
+            "bid_id",
+            "comment",
         )
 
 class BidPeriodListSerializer(serializers.ModelSerializer):
@@ -121,6 +185,7 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+            "id",
             "username",
             "first_name",
             "last_name",

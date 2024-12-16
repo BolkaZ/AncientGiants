@@ -12,13 +12,13 @@ from api.serializers import (PeriodGetSerializers, PeriodInputSerializer,
  PeriodUpdateInputSerializer, BidGetSerializer,ImageInputSerializer, BidListSerializer,
  BidUpdateInputSerializer, BidModerationInputSerializer, BidPeriodUpdateInputSerializer,
  BidPeriodListSerializer, UserCreateInputSerializer, UserListSerializer,
- UserLoginInputSerializer, UserUpdateInputSerializer )
+ UserLoginInputSerializer, UserUpdateInputSerializer, PeriodListSerializer,
+ BidGetFullInfoSerializer )
 from api.minio import add_pic, delete_pic
 
 class PeriodGetUpdateDeleteView(APIView):
 
     def get(self, request, period_id):
-        
         period = get_object_or_404(Period, id = period_id, is_active = True)
 
         serializers = PeriodGetSerializers(period)
@@ -37,9 +37,6 @@ class PeriodGetUpdateDeleteView(APIView):
         period.start = serializer.validated_data['start']
         period.end = serializer.validated_data['end']
         period.is_active = serializer.validated_data['is_active']
-        period.image = serializer.validated_data['image']
-
-        period.animals.set(serializer.validated_data['animals'])
 
         period.save()
 
@@ -47,8 +44,6 @@ class PeriodGetUpdateDeleteView(APIView):
         return Response(serializer_output.data)
 
     def delete(self, request, period_id):
-        # TODO needed delete image from minio.
-
         period = get_object_or_404(Period, id=period_id)
         delete_pic(period)
         period.delete()
@@ -57,8 +52,8 @@ class PeriodGetUpdateDeleteView(APIView):
 
 
 class PeriodListCreateView(APIView):
-    def get(self, request):
 
+    def get(self, request):
         search = request.query_params.get('search', '')
 
         if search != '':
@@ -67,7 +62,7 @@ class PeriodListCreateView(APIView):
         else:
             periods = Period.objects.filter(is_active = True)
 
-        serializers = PeriodGetSerializers(periods, many = True)
+        serializers = PeriodListSerializer(periods, many = True)
 
         bid = Bid.objects.filter(session_id = request.session.get('session_id'), status = 'DRAFT').first()
         if bid != None:
@@ -75,7 +70,6 @@ class PeriodListCreateView(APIView):
         
         else:
             bid_info = {'detail': 'Черновой заявки нет'}
-
 
         return Response({'periods': serializers.data, 'bid_info': bid_info})
 
@@ -91,8 +85,6 @@ class PeriodListCreateView(APIView):
             end=serializer.validated_data['end'],
         )
 
-        period.animals.set(serializer.validated_data['animals'])
-
         serializer_output = PeriodGetSerializers(period)
         return Response(serializer_output.data, status=201)
 
@@ -100,17 +92,15 @@ class PeriodListCreateView(APIView):
 
 class PeriodInBidCreateDeleteUpdateView(APIView):
 
-    def post(self, request, period_id):
+    def post(self, request,  period_id):
+        bid_id = request.data.get("bid_id")
+
+        if bid_id is None:
+            bid = Bid.objects.create(status="DRAFT")
+        else:
+            bid = get_object_or_404(Bid, id=bid_id, status="DRAFT")
+       
         period = get_object_or_404(Period, id=period_id)
-
-        session_id = request.session.get('session_id')
-        if not session_id:
-            session_id = str(uuid.uuid4())
-            request.session['session_id'] = session_id
-
-        bid = Bid.objects.filter(session_id=session_id, status='DRAFT').first()
-        if not bid:
-            bid = Bid.objects.create(session_id=session_id, status='DRAFT')
 
         bid_period = BidPeriod.objects.filter(bid=bid, period=period)
         if not bid_period.exists():
@@ -120,7 +110,7 @@ class PeriodInBidCreateDeleteUpdateView(APIView):
         return Response(serializer.data, status=201)
 
     def delete(self, request, period_id):
-        bid = get_object_or_404(Bid, session_id=request.session.get("session_id"), status='DRAFT')
+        bid = get_object_or_404(Bid, id=request.data.get("bid_id", -1), status='DRAFT')
         period = get_object_or_404(Period, id=period_id)
 
         bid_period_item = get_object_or_404(BidPeriod, bid=bid, period=period)
@@ -134,14 +124,14 @@ class PeriodInBidCreateDeleteUpdateView(APIView):
         serializer = BidPeriodUpdateInputSerializer(data=data)
         serializer.is_valid(raise_exception=True)
 
-        bid = get_object_or_404(Bid, session_id=request.session.get("session_id"), status='DRAFT')
+        bid = get_object_or_404(Bid, id=serializer.validated_data["bid_id"])
         period = get_object_or_404(Period, id=period_id)
 
         bid_period_item = get_object_or_404(BidPeriod, bid=bid, period=period)
-        bid_period_item.count = serializer.validated_data["count"]
+        bid_period_item.comment = serializer.validated_data["comment"]
         bid_period_item.save()
 
-        serializer_output = BidPeriodListSerializer(bid_period_item)
+        serializer_output = BidGetSerializer(bid)
         return Response(serializer_output.data)
 
         
@@ -167,6 +157,7 @@ class PeriodImageCreateView(APIView):
 
 
 class BidListView(APIView):
+    
     def get(self, request):
         status_filter = request.query_params.get('status')
         date_start = request.query_params.get('date_start')
@@ -188,16 +179,11 @@ class BidGetUpdateDeleteView(APIView):
     def get(self, request, bid_id):
         bid = get_object_or_404(Bid, id=bid_id)
 
-        serializer = BidGetSerializer(bid)
+        serializer = BidGetFullInfoSerializer(bid)
         return Response(serializer.data, status=200)
 
     def put(self, request, bid_id):
         bid = get_object_or_404(Bid, id=bid_id, status='DRAFT')
-
-        # request.session['session_id'] = '2caa11fc-6200-4f00-8ad2-367247a6a466'
-
-        if bid.session_id != request.session.get('session_id'):
-            return Response({'detail':'Access denied.'}, status=403)
 
         data = request.data
         serializer = BidUpdateInputSerializer(data=data)
@@ -206,14 +192,11 @@ class BidGetUpdateDeleteView(APIView):
         bid.comment = serializer.validated_data['comment']
         bid.save()
 
-        serializer_output = BidListSerializer(bid)
+        serializer_output = BidGetFullInfoSerializer(bid)
         return Response(serializer_output.data)
 
     def delete(self, request, bid_id):
         bid = get_object_or_404(Bid, id=bid_id, status='DRAFT')
-
-        if bid.session_id != request.session.get('session_id'):
-            return Response({'detail':'Access denied.'}, status=403)
 
         bid.status = 'ON_DELETE'
         bid.save()
@@ -226,9 +209,6 @@ class BidFormView(APIView):
     def put(self, request, bid_id):
         bid = get_object_or_404(Bid, id=bid_id, status='DRAFT')
 
-        if bid.session_id != request.session.get('session_id'):
-            return Response({'detail':'Access denied.'}, status=403)
-
         if not bid.periods.all():
             return Response({'detail':'Bid is empty.'})
 
@@ -237,7 +217,7 @@ class BidFormView(APIView):
 
         bid.save()
 
-        serializer = BidListSerializer(bid)
+        serializer = BidGetFullInfoSerializer(bid)
         return Response(serializer.data)
 
 class BidModerationView(APIView):
@@ -290,9 +270,6 @@ class UserCreateView(APIView):
 class UserUpdateView(APIView):
 
     def put(self, request, user_id):
-        # self.permission_classes = (permissions.IsAuthenticated,)
-        # self.check_permissions(request)
-
         data = request.data
         serializer = UserUpdateInputSerializer(data=data)
         serializer.is_valid(raise_exception=True)

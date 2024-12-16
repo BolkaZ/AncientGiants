@@ -21,7 +21,4 @@ urlpatterns = [
     path('users/<int:user_id>/', views.UserUpdateView.as_view()),
     path('login/', views.UserLoginView.as_view()),
     path('logout/', views.UserLogoutView.as_view()),
-
-    # Set session_id
-    path('session/<str:session_id>/', views.SessionCreateView.as_view())
 ]

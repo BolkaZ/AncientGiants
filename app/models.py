@@ -36,7 +36,7 @@ class Animal(models.Model):
 class BidPeriod(models.Model):
     bid = models.ForeignKey('Bid', on_delete=models.CASCADE, related_name='periods', verbose_name='Заявка')
     period = models.ForeignKey('Period', on_delete=models.CASCADE, related_name='bids', verbose_name='Период')
-    count = models.PositiveIntegerField(default=1, verbose_name='Количесвто')
+    comment = models.CharField(max_length=255, blank=True, null=True, verbose_name='Комментарий')
 
     class Meta:
         verbose_name = 'M2M'
@@ -65,7 +65,7 @@ class Bid(models.Model):
 
     to_form_at = models.DateTimeField(blank=True, null=True, verbose_name='Дата формирования')
 
-    finished_at = models.DateTimeField(blank=True, null=True, auto_now_add=True, verbose_name='Дата завершения')
+    finished_at = models.DateTimeField(blank=True, null=True, verbose_name='Дата завершения')
 
     updated_at = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
 

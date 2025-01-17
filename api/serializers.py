@@ -92,12 +92,39 @@ class BidGetSerializer(serializers.ModelSerializer):
             'periods'
         )
 
+class AnimalGetSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Animal
+        fields = (
+            "name",
+            "group",
+            "quantity_found"
+        )
+
+class PeriodForBidFullInfoSerializer(serializers.ModelSerializer):
+    name = serializers.CharField(source="period.name")
+    image = serializers.CharField(source="period.image")
+    animals = serializers.SerializerMethodField()
+
+    def get_animals(self, obj):
+        return AnimalGetSerializer(obj.period.animals, many=True).data
+    
+    class Meta:
+        model = BidPeriod
+        fields = (
+            'name',
+            'image',
+            'animals',
+            'quantity_found'
+        )
+
 class BidGetFullInfoSerializer(BidGetSerializer):
+    periods = PeriodForBidFullInfoSerializer(many=True)
+
     class Meta:
         model = Bid
         fields = (
-            'id',
-            'status',
             'periods',
             'created_at',
             'to_form_at',
@@ -113,8 +140,6 @@ class BidListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bid
         fields = (
-                'id', 
-                'status', 
                 'created_at', 
                 'to_form_at',
                 'finished_at',
@@ -147,13 +172,13 @@ class ImageInputSerializer(serializers.Serializer):
 
 class BidPeriodUpdateInputSerializer(serializers.ModelSerializer):
     bid_id = serializers.IntegerField()
-    comment = serializers.CharField()
+    quantity_found = serializers.IntegerField()
 
     class Meta:
         model = BidPeriod
         fields = (
             "bid_id",
-            "comment",
+            "quantity_found",
         )
 
 class BidPeriodListSerializer(serializers.ModelSerializer):

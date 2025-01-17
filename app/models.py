@@ -36,7 +36,8 @@ class Animal(models.Model):
 class BidPeriod(models.Model):
     bid = models.ForeignKey('Bid', on_delete=models.CASCADE, related_name='periods', verbose_name='Заявка')
     period = models.ForeignKey('Period', on_delete=models.CASCADE, related_name='bids', verbose_name='Период')
-    comment = models.CharField(max_length=255, blank=True, null=True, verbose_name='Комментарий')
+    # comment = models.CharField(max_length=255, blank=True, null=True, verbose_name='Комментарий')
+    quantity_found = models.IntegerField(default=1, verbose_name='Количество найденных окаменелостей особи')
 
     class Meta:
         verbose_name = 'M2M'

@@ -15,7 +15,11 @@ def add_to_bid(request, period_id):
         order = Bid.objects.create(status = 'DRAFT')
         request.session['bid_id'] = order.id
     else:
-        order = Bid.objects.filter(id=int(bid_id)).first()
+        order = Bid.objects.filter(id=int(bid_id), status="DRAFT").first()
+
+        if not order:
+            order = Bid.objects.create(status = 'DRAFT')
+            request.session['bid_id'] = order.id
 
     period = Period.objects.get(id = period_id)
 

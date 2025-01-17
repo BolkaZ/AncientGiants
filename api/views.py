@@ -106,7 +106,7 @@ class PeriodInBidCreateDeleteUpdateView(APIView):
         if not bid_period.exists():
             BidPeriod.objects.create(bid=bid, period=period)
 
-        serializer = BidGetSerializer(bid)
+        serializer = BidGetFullInfoSerializer(bid)
         return Response(serializer.data, status=201)
 
     def delete(self, request, period_id):
@@ -128,10 +128,10 @@ class PeriodInBidCreateDeleteUpdateView(APIView):
         period = get_object_or_404(Period, id=period_id)
 
         bid_period_item = get_object_or_404(BidPeriod, bid=bid, period=period)
-        bid_period_item.comment = serializer.validated_data["comment"]
+        bid_period_item.quantity_found = serializer.validated_data["quantity_found"]
         bid_period_item.save()
 
-        serializer_output = BidGetSerializer(bid)
+        serializer_output = BidGetFullInfoSerializer(bid)
         return Response(serializer_output.data)
 
         
@@ -318,7 +318,6 @@ class UserLogoutView(APIView):
     def post(self, request):
         logout(request)
         return Response({"detail":"success"})
-
 
 
 

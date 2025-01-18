@@ -1,4 +1,5 @@
 import uuid
+import redis
 
 from datetime import datetime
 from django.shortcuts import render
@@ -15,8 +16,14 @@ from api.serializers import (PeriodGetSerializers, PeriodInputSerializer,
  UserLoginInputSerializer, UserUpdateInputSerializer, PeriodListSerializer,
  BidGetFullInfoSerializer )
 from api.minio import add_pic, delete_pic
+from api.permissions import IsModeratorOrReadOnly, IsCreator, IsAuth, IsModerator, IsCreatorOrModerator
+from paleo_project import settings
+
+
+redis = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 
 class PeriodGetUpdateDeleteView(APIView):
+    permission_classes = (IsModeratorOrReadOnly,)
 
     def get(self, request, period_id):
         period = get_object_or_404(Period, id = period_id, is_active = True)
@@ -52,6 +59,7 @@ class PeriodGetUpdateDeleteView(APIView):
 
 
 class PeriodListCreateView(APIView):
+    permission_classes = (IsModeratorOrReadOnly,)
 
     def get(self, request):
         search = request.query_params.get('search', '')
@@ -93,13 +101,18 @@ class PeriodListCreateView(APIView):
 class PeriodInBidCreateDeleteUpdateView(APIView):
 
     def post(self, request,  period_id):
+        self.permission_classes = (IsAuth, IsCreator,)
+        self.check_permissions(request)
+
         bid_id = request.data.get("bid_id")
 
         if bid_id is None:
-            bid = Bid.objects.create(status="DRAFT")
+            user_id = str(redis.get(request.COOKIES.get("session_id"))).split("b'")[-1].split("'")[0]
+            bid = Bid.objects.create(status="DRAFT", session_id=user_id)
         else:
             bid = get_object_or_404(Bid, id=bid_id, status="DRAFT")
-       
+
+        self.check_object_permissions(request, obj=bid)
         period = get_object_or_404(Period, id=period_id)
 
         bid_period = BidPeriod.objects.filter(bid=bid, period=period)
@@ -110,7 +123,12 @@ class PeriodInBidCreateDeleteUpdateView(APIView):
         return Response(serializer.data, status=201)
 
     def delete(self, request, period_id):
+        self.permission_classes = (IsAuth, IsCreator,)
+        self.check_permissions(request)
+
         bid = get_object_or_404(Bid, id=request.data.get("bid_id", -1), status='DRAFT')
+        self.check_object_permissions(request, obj=bid)
+
         period = get_object_or_404(Period, id=period_id)
 
         bid_period_item = get_object_or_404(BidPeriod, bid=bid, period=period)
@@ -120,11 +138,16 @@ class PeriodInBidCreateDeleteUpdateView(APIView):
         return Response(status=204)
 
     def put(self, request, period_id):
+        self.permission_classes = (IsAuth, IsCreator,)
+        self.check_permissions(request)
+
         data = request.data
         serializer = BidPeriodUpdateInputSerializer(data=data)
         serializer.is_valid(raise_exception=True)
 
         bid = get_object_or_404(Bid, id=serializer.validated_data["bid_id"])
+        self.check_object_permissions(request, obj=bid)
+
         period = get_object_or_404(Period, id=period_id)
 
         bid_period_item = get_object_or_404(BidPeriod, bid=bid, period=period)
@@ -138,6 +161,7 @@ class PeriodInBidCreateDeleteUpdateView(APIView):
 
 
 class PeriodImageCreateView(APIView):
+    permission_classes = (IsModeratorOrReadOnly,)
 
     def post(self, request, period_id):
         period = get_object_or_404(Period, id=period_id)
@@ -157,6 +181,7 @@ class PeriodImageCreateView(APIView):
 
 
 class BidListView(APIView):
+    permission_classes = (IsModerator, )
     
     def get(self, request):
         status_filter = request.query_params.get('status')
@@ -177,13 +202,17 @@ class BidListView(APIView):
 class BidGetUpdateDeleteView(APIView):
 
     def get(self, request, bid_id):
+        self.permission_classes = (IsCreatorOrModerator, )
         bid = get_object_or_404(Bid, id=bid_id)
+        self.check_object_permissions(request, obj=bid)
 
         serializer = BidGetFullInfoSerializer(bid)
         return Response(serializer.data, status=200)
 
     def put(self, request, bid_id):
+        self.permission_classes = (IsCreatorOrModerator, )
         bid = get_object_or_404(Bid, id=bid_id, status='DRAFT')
+        self.check_object_permissions(request, obj=bid)
 
         data = request.data
         serializer = BidUpdateInputSerializer(data=data)
@@ -196,7 +225,9 @@ class BidGetUpdateDeleteView(APIView):
         return Response(serializer_output.data)
 
     def delete(self, request, bid_id):
+        self.permission_classes = (IsCreatorOrModerator, )
         bid = get_object_or_404(Bid, id=bid_id, status='DRAFT')
+        self.check_object_permissions(request, obj=bid)
 
         bid.status = 'ON_DELETE'
         bid.save()
@@ -207,7 +238,9 @@ class BidGetUpdateDeleteView(APIView):
 class BidFormView(APIView):
 
     def put(self, request, bid_id):
+        self.permission_classes = (IsCreatorOrModerator,)
         bid = get_object_or_404(Bid, id=bid_id, status='DRAFT')
+        self.check_object_permissions(request, obj=bid)
 
         if not bid.periods.all():
             return Response({'detail':'Bid is empty.'})
@@ -221,7 +254,7 @@ class BidFormView(APIView):
         return Response(serializer.data)
 
 class BidModerationView(APIView):
-    permission_classes = (permissions.IsAdminUser,)
+    permission_classes = (IsModerator,)
 
     def put(self, request, bid_id):
         bid = get_object_or_404(Bid, id=bid_id, status='APPROVED')
@@ -268,6 +301,7 @@ class UserCreateView(APIView):
         return Response(serializer_output.data)
 
 class UserUpdateView(APIView):
+    permission_classes = (IsModerator, )
 
     def put(self, request, user_id):
         data = request.data
@@ -306,9 +340,14 @@ class UserLoginView(APIView):
         )
 
         if user is not None:
-            login(request, user)
+            session_id = str(uuid.uuid4())
+            redis.set(session_id, user.id)
+            # login(request, user)
             serializer_output = UserListSerializer(user)
-            return Response(serializer_output.data)
+            response = Response(serializer_output.data)
+            response.set_cookie("session_id", session_id, secure=False, httponly=True, samesite='None', max_age=600)
+            print(redis.get(session_id))
+            return response
         else:
             return Response({"detail":"Invalid credentianls."}, status=403)
 
@@ -316,8 +355,18 @@ class UserLoginView(APIView):
 class UserLogoutView(APIView):
 
     def post(self, request):
-        logout(request)
-        return Response({"detail":"success"})
+        session_id = request.COOKIES.get("session_id")
+        print(session_id)
+        if session_id:
+            redis.delete(session_id)
+        # logout(request)
+            response = Response({"detail":"success"})
+            response.delete_cookie("session_id")
+            return response
+        return Response({"detail": "You must authorize before."})
+    
+
+
 
 
 

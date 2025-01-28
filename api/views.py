@@ -4,10 +4,12 @@ import redis
 from datetime import datetime
 from django.shortcuts import render
 from django.contrib.auth import authenticate, login, logout
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
 from rest_framework import permissions
+from rest_framework import parsers
 from app.models import *
 from api.serializers import (PeriodGetSerializers, PeriodInputSerializer,
  PeriodUpdateInputSerializer, BidGetSerializer,ImageInputSerializer, BidListSerializer,
@@ -15,6 +17,12 @@ from api.serializers import (PeriodGetSerializers, PeriodInputSerializer,
  BidPeriodListSerializer, UserCreateInputSerializer, UserListSerializer,
  UserLoginInputSerializer, UserUpdateInputSerializer, PeriodListSerializer,
  BidGetFullInfoSerializer )
+from api.docs.periods import (PERIOD_GET_SCHEMA, PERIOD_UPDATE_SCHEMA, PERIOD_DELETE_SCHEMA,
+                              PERIOD_IMAGE_CREATE_SCHEMA, PERIOD_LIST_SCHEMA, PERIOD_CREATE_SCHEMA)
+from api.docs.bid import (PERIOD_IN_BID_CREATE_SCHEMA, PERIOD_IN_BID_DELETE_SCHEMA, PERIOD_IN_BID_UPDATE_SCHEMA, 
+                          BID_LIST_SCHEMA, BID_GET_SCHEMA, BID_UPDATE_SCHEMA, BID_DELETE_SCHEMA, BID_FORM_SCHEMA,
+                          BID_MODERATION_SCHEMA)
+from api.docs.users import (USER_CREATE_SCHEMA, USER_UPDATE_SCHEMA, USER_LOGIN_SCHEMA, USER_LOGOUT_SCHEMA)
 from api.minio import add_pic, delete_pic
 from api.permissions import IsModeratorOrReadOnly, IsCreator, IsAuth, IsModerator, IsCreatorOrModerator
 from paleo_project import settings
@@ -25,6 +33,7 @@ redis = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT)
 class PeriodGetUpdateDeleteView(APIView):
     permission_classes = (IsModeratorOrReadOnly,)
 
+    @swagger_auto_schema(**PERIOD_GET_SCHEMA)
     def get(self, request, period_id):
         period = get_object_or_404(Period, id = period_id, is_active = True)
 
@@ -32,6 +41,7 @@ class PeriodGetUpdateDeleteView(APIView):
 
         return Response(serializers.data)
 
+    @swagger_auto_schema(**PERIOD_UPDATE_SCHEMA)
     def put(self, request, period_id):
         period = get_object_or_404(Period, id=period_id)
 
@@ -50,6 +60,7 @@ class PeriodGetUpdateDeleteView(APIView):
         serializer_output = PeriodGetSerializers(period)
         return Response(serializer_output.data)
 
+    @swagger_auto_schema(**PERIOD_DELETE_SCHEMA)
     def delete(self, request, period_id):
         period = get_object_or_404(Period, id=period_id)
         delete_pic(period)
@@ -61,6 +72,7 @@ class PeriodGetUpdateDeleteView(APIView):
 class PeriodListCreateView(APIView):
     permission_classes = (IsModeratorOrReadOnly,)
 
+    @swagger_auto_schema(**PERIOD_LIST_SCHEMA)
     def get(self, request):
         search = request.query_params.get('search', '')
 
@@ -81,6 +93,7 @@ class PeriodListCreateView(APIView):
 
         return Response({'periods': serializers.data, 'bid_info': bid_info})
 
+    @swagger_auto_schema(**PERIOD_CREATE_SCHEMA)
     def post(self, request):
         input_data = request.data # {'key':'value'}
         serializer = PeriodInputSerializer(data=input_data)
@@ -99,7 +112,9 @@ class PeriodListCreateView(APIView):
 
 
 class PeriodInBidCreateDeleteUpdateView(APIView):
+    parser_classes = (parsers.FormParser, parsers.MultiPartParser)
 
+    @swagger_auto_schema(**PERIOD_IN_BID_CREATE_SCHEMA)
     def post(self, request,  period_id):
         self.permission_classes = (IsAuth, IsCreator,)
         self.check_permissions(request)
@@ -122,6 +137,7 @@ class PeriodInBidCreateDeleteUpdateView(APIView):
         serializer = BidGetFullInfoSerializer(bid)
         return Response(serializer.data, status=201)
 
+    @swagger_auto_schema(**PERIOD_IN_BID_DELETE_SCHEMA)
     def delete(self, request, period_id):
         self.permission_classes = (IsAuth, IsCreator,)
         self.check_permissions(request)
@@ -137,6 +153,7 @@ class PeriodInBidCreateDeleteUpdateView(APIView):
 
         return Response(status=204)
 
+    @swagger_auto_schema(**PERIOD_IN_BID_UPDATE_SCHEMA)
     def put(self, request, period_id):
         self.permission_classes = (IsAuth, IsCreator,)
         self.check_permissions(request)
@@ -162,7 +179,9 @@ class PeriodInBidCreateDeleteUpdateView(APIView):
 
 class PeriodImageCreateView(APIView):
     permission_classes = (IsModeratorOrReadOnly,)
+    parser_classes = (parsers.FormParser, parsers.MultiPartParser)
 
+    @swagger_auto_schema(**PERIOD_IMAGE_CREATE_SCHEMA)
     def post(self, request, period_id):
         period = get_object_or_404(Period, id=period_id)
 
@@ -183,6 +202,7 @@ class PeriodImageCreateView(APIView):
 class BidListView(APIView):
     permission_classes = (IsModerator, )
     
+    @swagger_auto_schema(**BID_LIST_SCHEMA)
     def get(self, request):
         status_filter = request.query_params.get('status')
         date_start = request.query_params.get('date_start')
@@ -201,6 +221,7 @@ class BidListView(APIView):
 
 class BidGetUpdateDeleteView(APIView):
 
+    @swagger_auto_schema(**BID_GET_SCHEMA)
     def get(self, request, bid_id):
         self.permission_classes = (IsCreatorOrModerator, )
         bid = get_object_or_404(Bid, id=bid_id)
@@ -209,6 +230,7 @@ class BidGetUpdateDeleteView(APIView):
         serializer = BidGetFullInfoSerializer(bid)
         return Response(serializer.data, status=200)
 
+    @swagger_auto_schema(**BID_UPDATE_SCHEMA)
     def put(self, request, bid_id):
         self.permission_classes = (IsCreatorOrModerator, )
         bid = get_object_or_404(Bid, id=bid_id, status='DRAFT')
@@ -224,6 +246,7 @@ class BidGetUpdateDeleteView(APIView):
         serializer_output = BidGetFullInfoSerializer(bid)
         return Response(serializer_output.data)
 
+    @swagger_auto_schema(**BID_DELETE_SCHEMA)
     def delete(self, request, bid_id):
         self.permission_classes = (IsCreatorOrModerator, )
         bid = get_object_or_404(Bid, id=bid_id, status='DRAFT')
@@ -237,6 +260,7 @@ class BidGetUpdateDeleteView(APIView):
 
 class BidFormView(APIView):
 
+    @swagger_auto_schema(**BID_FORM_SCHEMA)
     def put(self, request, bid_id):
         self.permission_classes = (IsCreatorOrModerator,)
         bid = get_object_or_404(Bid, id=bid_id, status='DRAFT')
@@ -256,6 +280,7 @@ class BidFormView(APIView):
 class BidModerationView(APIView):
     permission_classes = (IsModerator,)
 
+    @swagger_auto_schema(**BID_MODERATION_SCHEMA)
     def put(self, request, bid_id):
         bid = get_object_or_404(Bid, id=bid_id, status='APPROVED')
 
@@ -264,7 +289,7 @@ class BidModerationView(APIView):
         serializer.is_valid(raise_exception=True)
 
         if serializer.validated_data['status'] not in ['REJECTED', 'FINISHED']:
-            return Response({'detail':'Status must be rejected or finished.'})
+            return Response({'detail':'Status must be rejected or finished.'}, status=400)
 
         bid.status = serializer.validated_data['status']
         bid.finished_at = datetime.now()
@@ -284,6 +309,7 @@ class SessionCreateView(APIView):
 
 class UserCreateView(APIView):
 
+    @swagger_auto_schema(**USER_CREATE_SCHEMA)
     def post(self, request):
         data = request.data
         serializer = UserCreateInputSerializer(data=data)
@@ -303,6 +329,7 @@ class UserCreateView(APIView):
 class UserUpdateView(APIView):
     permission_classes = (IsModerator, )
 
+    @swagger_auto_schema(**USER_UPDATE_SCHEMA)
     def put(self, request, user_id):
         data = request.data
         serializer = UserUpdateInputSerializer(data=data)
@@ -329,6 +356,7 @@ class UserUpdateView(APIView):
 
 class UserLoginView(APIView):
 
+    @swagger_auto_schema(**USER_LOGIN_SCHEMA)
     def post(self, request):
         data = request.data
         serializer = UserLoginInputSerializer(data=data)
@@ -346,6 +374,12 @@ class UserLoginView(APIView):
             serializer_output = UserListSerializer(user)
             response = Response(serializer_output.data)
             response.set_cookie("session_id", session_id, secure=False, httponly=True, samesite='None', max_age=600)
+            response.set_cookie("id", serializer_output.data["id"], secure=False, httponly=True, samesite='None', max_age=600)
+            response.set_cookie("username", serializer_output.data["username"], secure=False, httponly=True, samesite='None', max_age=600)
+            response.set_cookie("first_name", serializer_output.data["first_name"], secure=False, httponly=True, samesite='None', max_age=600)
+            response.set_cookie("last_name", serializer_output.data["last_name"], secure=False, httponly=True, samesite='None', max_age=600)
+            response.set_cookie("email", serializer_output.data["email"], secure=False, httponly=True, samesite='None', max_age=600)
+            response.set_cookie("is_superuser", serializer_output.data["is_superuser"], secure=False, httponly=True, samesite='None', max_age=600)
             print(redis.get(session_id))
             return response
         else:
@@ -354,6 +388,7 @@ class UserLoginView(APIView):
 
 class UserLogoutView(APIView):
 
+    @swagger_auto_schema(**USER_LOGOUT_SCHEMA)
     def post(self, request):
         session_id = request.COOKIES.get("session_id")
         print(session_id)
@@ -363,7 +398,7 @@ class UserLogoutView(APIView):
             response = Response({"detail":"success"})
             response.delete_cookie("session_id")
             return response
-        return Response({"detail": "You must authorize before."})
+        return Response({"detail": "You must authorize before."}, status=400)
     
 
 

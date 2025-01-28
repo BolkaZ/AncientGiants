@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'app',
     'rest_framework',
     'drf_yasg',
+    "corsheaders"
 ]
 
 MIDDLEWARE = [
@@ -145,3 +146,10 @@ REST_FRAMEWORK = {
 
 REDIS_HOST = "127.0.0.1"
 REDIS_PORT = 6379
+
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = ["*"]
+
+SECURE_CROSS_ORIGIN_OPENER_POLICY = None

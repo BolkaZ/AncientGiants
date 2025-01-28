@@ -105,10 +105,10 @@ class AnimalGetSerializer(serializers.ModelSerializer):
 class PeriodForBidFullInfoSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="period.name")
     image = serializers.CharField(source="period.image")
-    animals = serializers.SerializerMethodField()
+    animals = AnimalGetSerializer(source="period.animals", many=True) # serializers.SerializerMethodField()
 
-    def get_animals(self, obj):
-        return AnimalGetSerializer(obj.period.animals, many=True).data
+    # def get_animals(self, obj):
+    #     return AnimalGetSerializer(obj.period.animals, many=True).data
     
     class Meta:
         model = BidPeriod
@@ -192,7 +192,13 @@ class UserCreateInputSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ("__all__")
+        fields = (
+            "username",
+            "password",
+            "first_name",
+            "last_name",
+            "email",
+        )
 
 class UserLoginInputSerializer(serializers.ModelSerializer):
     username = serializers.CharField()
@@ -214,7 +220,8 @@ class UserListSerializer(serializers.ModelSerializer):
             "username",
             "first_name",
             "last_name",
-            "email"
+            "email",
+            "is_superuser"
         )
 
 class UserUpdateInputSerializer(serializers.ModelSerializer):

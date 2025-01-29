@@ -19,18 +19,6 @@ class PeriodForBidSerializers(serializers.ModelSerializer):
             'comment'
         )
 
-class PeriodGetSerializers(serializers.ModelSerializer):
-    class Meta:
-        model = Period
-
-        fields = (
-            'id',
-            'name',
-            'detail_text',
-            'start',
-            'end',
-            'image'
-        )
 
 
 class PeriodListSerializer(serializers.ModelSerializer):
@@ -102,6 +90,21 @@ class AnimalGetSerializer(serializers.ModelSerializer):
             "quantity_found"
         )
 
+class PeriodGetSerializers(serializers.ModelSerializer):
+    animals = AnimalGetSerializer(many=True)
+    class Meta:
+        model = Period
+
+        fields = (
+            'id',
+            'name',
+            'detail_text',
+            'start',
+            'end',
+            'image',
+            'animals'
+        )
+
 class PeriodForBidFullInfoSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="period.name")
     image = serializers.CharField(source="period.image")
@@ -119,8 +122,15 @@ class PeriodForBidFullInfoSerializer(serializers.ModelSerializer):
             'quantity_found'
         )
 
+class AnimalSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Animal
+        fields = ("__all__")
+
 class BidGetFullInfoSerializer(BidGetSerializer):
     periods = PeriodForBidFullInfoSerializer(many=True)
+    animal = AnimalSerializer()
 
     class Meta:
         model = Bid
@@ -130,7 +140,8 @@ class BidGetFullInfoSerializer(BidGetSerializer):
             'to_form_at',
             'updated_at',
             'finished_at',
-            'comment'
+            'comment',
+            'animal'
         )
 
 class BidListSerializer(serializers.ModelSerializer):
@@ -145,6 +156,7 @@ class BidListSerializer(serializers.ModelSerializer):
                 'finished_at',
                 'updated_at', 
                 'comment',
+                'qr'
                 # 'user', 
                 # 'moderator'
             )
@@ -235,3 +247,10 @@ class UserUpdateInputSerializer(serializers.ModelSerializer):
             "email",
             "password"
         )
+
+
+
+class BidFormInputSerializer(serializers.Serializer):
+    comment = serializers.CharField()
+    name = serializers.CharField()
+    group = serializers.CharField()

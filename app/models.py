@@ -74,6 +74,8 @@ class Bid(models.Model):
 
     animal = models.ForeignKey(to='Animal', blank=True, null=True, on_delete=models.SET_NULL, verbose_name='Животное')
 
+    qr = models.TextField(null=True, blank=True, verbose_name="QR код")
+
     def __str__(self):
         return f"Bid for {self.id} {self.user.username if self.user else 'No User'}"
 

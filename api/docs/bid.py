@@ -3,7 +3,7 @@ from rest_framework import status
 
 from api.serializers import (BidGetFullInfoSerializer, BidPeriodUpdateInputSerializer, BidListSerializer,
                              BidGetFullInfoSerializer, BidUpdateInputSerializer, BidGetFullInfoSerializer,
-                             BidModerationInputSerializer)
+                             BidModerationInputSerializer, BidFormInputSerializer)
 from api.docs.errors import HTTTP_403, HTTTP_404
 
 
@@ -137,6 +137,7 @@ BID_FORM_SCHEMA ={
     "operation_description": """
         Запрос на формирование заявки.
     """,
+    "request_body":BidFormInputSerializer(),
      "responses": {
         status.HTTP_200_OK: BidGetFullInfoSerializer(),
         status.HTTP_403_FORBIDDEN: HTTTP_403,

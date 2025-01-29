@@ -16,7 +16,7 @@ from api.serializers import (PeriodGetSerializers, PeriodInputSerializer,
  BidUpdateInputSerializer, BidModerationInputSerializer, BidPeriodUpdateInputSerializer,
  BidPeriodListSerializer, UserCreateInputSerializer, UserListSerializer,
  UserLoginInputSerializer, UserUpdateInputSerializer, PeriodListSerializer,
- BidGetFullInfoSerializer )
+ BidGetFullInfoSerializer, BidFormInputSerializer )
 from api.docs.periods import (PERIOD_GET_SCHEMA, PERIOD_UPDATE_SCHEMA, PERIOD_DELETE_SCHEMA,
                               PERIOD_IMAGE_CREATE_SCHEMA, PERIOD_LIST_SCHEMA, PERIOD_CREATE_SCHEMA)
 from api.docs.bid import (PERIOD_IN_BID_CREATE_SCHEMA, PERIOD_IN_BID_DELETE_SCHEMA, PERIOD_IN_BID_UPDATE_SCHEMA, 
@@ -25,6 +25,7 @@ from api.docs.bid import (PERIOD_IN_BID_CREATE_SCHEMA, PERIOD_IN_BID_DELETE_SCHE
 from api.docs.users import (USER_CREATE_SCHEMA, USER_UPDATE_SCHEMA, USER_LOGIN_SCHEMA, USER_LOGOUT_SCHEMA)
 from api.minio import add_pic, delete_pic
 from api.permissions import IsModeratorOrReadOnly, IsCreator, IsAuth, IsModerator, IsCreatorOrModerator
+from api.services.generate_qr_code import generate_qr_code
 from paleo_project import settings
 
 
@@ -200,7 +201,7 @@ class PeriodImageCreateView(APIView):
 
 
 class BidListView(APIView):
-    permission_classes = (IsModerator, )
+    permission_classes = (IsAuth,)
     
     @swagger_auto_schema(**BID_LIST_SCHEMA)
     def get(self, request):
@@ -209,6 +210,11 @@ class BidListView(APIView):
         date_end = request.query_params.get('date_end')
 
         bids = Bid.objects.exclude(status__in=['DRAFT', 'ON_DELETE'])
+
+        user = User.objects.get(id=redis.get(request.COOKIES.get("session_id")))
+        if not user.is_superuser:
+            bids.filter(session_id=str(user.id))
+
 
         if status_filter:
             bids = bids.filter(status=status_filter)
@@ -266,10 +272,29 @@ class BidFormView(APIView):
         bid = get_object_or_404(Bid, id=bid_id, status='DRAFT')
         self.check_object_permissions(request, obj=bid)
 
+        input_serializer = BidFormInputSerializer(data=request.data)
+        input_serializer.is_valid(raise_exception=True)
+
         if not bid.periods.all():
             return Response({'detail':'Bid is empty.'})
+        
+        animals = Animal.objects.filter(
+            name=input_serializer.validated_data["name"],
+            group=input_serializer.validated_data["group"],
+        )
+
+        if animals.exists():
+            animal = animals.first()
+        else:
+            animal = Animal.objects.create(
+                name=input_serializer.validated_data["name"],
+                group=input_serializer.validated_data["group"],
+                quantity_found=1
+            )
 
         bid.status = 'APPROVED'
+        bid.comment = input_serializer.validated_data["comment"]
+        bid.animal = animal
         bid.to_form_at = datetime.now()
 
         bid.save()
@@ -290,9 +315,15 @@ class BidModerationView(APIView):
 
         if serializer.validated_data['status'] not in ['REJECTED', 'FINISHED']:
             return Response({'detail':'Status must be rejected or finished.'}, status=400)
+        
+        for bid_item in bid.periods.all():
+            period = bid_item.period
+            period.animals.add(bid.animal)
+            period.save
 
         bid.status = serializer.validated_data['status']
         bid.finished_at = datetime.now()
+        bid.qr = generate_qr_code(bid)
 
         bid.save()
 
@@ -378,7 +409,7 @@ class UserLoginView(APIView):
             response.set_cookie("username", serializer_output.data["username"], secure=False, httponly=True, samesite='None', max_age=600)
             response.set_cookie("first_name", serializer_output.data["first_name"], secure=False, httponly=True, samesite='None', max_age=600)
             response.set_cookie("last_name", serializer_output.data["last_name"], secure=False, httponly=True, samesite='None', max_age=600)
-            response.set_cookie("email", serializer_output.data["email"], secure=False, httponly=True, samesite='None', max_age=600)
+            response.set_cookie("email", serializer_output.data["email"], secure=False, httponly=False, samesite='None', max_age=600)
             response.set_cookie("is_superuser", serializer_output.data["is_superuser"], secure=False, httponly=True, samesite='None', max_age=600)
             print(redis.get(session_id))
             return response

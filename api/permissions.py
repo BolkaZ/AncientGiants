@@ -66,7 +66,10 @@ class IsCreatorOrModerator(permissions.BasePermission):
     
 def get_user_or_none(request):
     user = None
-    session_id = request.COOKIES.get("session_id")
+    session_id = request.COOKIES.get("session_id") or request.headers.get("session_id")
+    print(request.headers.get("session_id"))
+    print(request.COOKIES.get("session_id"))
+    print(request.headers)
     if session_id:
         user_id = redis.get(session_id)
         user = User.objects.filter(id=user_id).first()

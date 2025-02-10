@@ -84,8 +84,11 @@ class PeriodListCreateView(APIView):
             periods = Period.objects.filter(is_active = True)
 
         serializers = PeriodListSerializer(periods, many = True)
-
-        bid = Bid.objects.filter(session_id = request.session.get('session_id'), status = 'DRAFT').first()
+        cookie_id = request.COOKIES.get('session_id')
+        bid = None
+        if cookie_id: 
+            user = User.objects.get(id =int(str(redis.get(request.COOKIES.get("session_id"))).split("b'")[-1].split("'")[0]))
+            bid = Bid.objects.filter(session_id = str(user.id), status = 'DRAFT').first()
         if bid != None:
             bid_info = {'bid_id': bid.id, 'count_of_periods': bid.periods.all().count()}
         
@@ -211,9 +214,9 @@ class BidListView(APIView):
 
         bids = Bid.objects.exclude(status__in=['DRAFT', 'ON_DELETE'])
 
-        user = User.objects.get(id=redis.get(request.COOKIES.get("session_id")))
+        user = User.objects.get(id =int(str(redis.get(request.COOKIES.get("session_id"))).split("b'")[-1].split("'")[0]))
         if not user.is_superuser:
-            bids.filter(session_id=str(user.id))
+            bids = bids.filter(session_id=str(user.id))
 
 
         if status_filter:
@@ -403,8 +406,8 @@ class UserLoginView(APIView):
             redis.set(session_id, user.id)
             # login(request, user)
             serializer_output = UserListSerializer(user)
-            response = Response(serializer_output.data)
-            response.set_cookie("session_id", session_id, secure=False, httponly=True, samesite='None', max_age=600)
+            response = Response(serializer_output.data | {'session_id' : session_id})
+            response.set_cookie("session_id", session_id, secure=False, httponly=True, samesite='Lax', max_age=600)
             response.set_cookie("id", serializer_output.data["id"], secure=False, httponly=True, samesite='None', max_age=600)
             response.set_cookie("username", serializer_output.data["username"], secure=False, httponly=True, samesite='None', max_age=600)
             response.set_cookie("first_name", serializer_output.data["first_name"], secure=False, httponly=True, samesite='None', max_age=600)

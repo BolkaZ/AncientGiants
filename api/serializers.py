@@ -1,6 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from app.models import *
+from paleo_project.settings import HOST
 
 class PeriodForBidSerializers(serializers.ModelSerializer):
     comment = serializers.SerializerMethodField()
@@ -22,6 +23,11 @@ class PeriodForBidSerializers(serializers.ModelSerializer):
 
 
 class PeriodListSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    def get_image(self, obj):
+        return f"http://{HOST}:9000{obj.image.split("9000")[-1]}"
+        # return f"http://{HOST}:8000/{obj.image.url}"
 
     class Meta:
         model = Period
@@ -92,6 +98,11 @@ class AnimalGetSerializer(serializers.ModelSerializer):
 
 class PeriodGetSerializers(serializers.ModelSerializer):
     animals = AnimalGetSerializer(many=True)
+    image = serializers.SerializerMethodField()
+
+    def get_image(self, obj):
+        return f"http://{HOST}:9000{obj.image.split("9000")[-1]}"
+
     class Meta:
         model = Period
 
@@ -135,6 +146,7 @@ class BidGetFullInfoSerializer(BidGetSerializer):
     class Meta:
         model = Bid
         fields = (
+            'id',
             'periods',
             'created_at',
             'to_form_at',
@@ -151,6 +163,7 @@ class BidListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bid
         fields = (
+                'id',
                 'created_at', 
                 'to_form_at',
                 'finished_at',

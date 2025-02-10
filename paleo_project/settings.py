@@ -44,6 +44,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -147,10 +148,54 @@ REST_FRAMEWORK = {
 REDIS_HOST = "127.0.0.1"
 REDIS_PORT = 6379
 
-# CORS_ORIGIN_ALLOW_ALL = True
-# CORS_ALLOW_ALL_ORIGINS = True
+# # CORS_ORIGIN_ALLOW_ALL = True
+# # CORS_ALLOW_ALL_ORIGINS = True
+# # CORS_ALLOW_CREDENTIALS = True
+# # CORS_ALLOWED_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:8000"]
+# CORS_ALLOW_HEADERS = ["*"]
+# # CORS_ALLOW_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+# # CORS_ALLOW_ALL_METHODS = True
+
+# CORS_ALLOWED_ORIGINS = ["http://localhost:3000",]
+# CORS_ALLOW_CREDENTIALS = True
+
+# CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]
+# CSRF_COOKIE_HTTPONLY = False
+
+
+
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+	"http://127.0.0.1:3000",
+	"http://192.168.31.8:3000",
+	"http://172.20.10.2:3000",
+    "http://192.168.0.13:8081"
+]
+
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = ["https://localhost:3000",]
-CORS_ALLOW_HEADERS = ["*"]
+
+
+
+
+
+
 
 # SECURE_CROSS_ORIGIN_OPENER_POLICY = None
+
+# CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]
+
+SWAGGER_SETTINGS = {
+    "USE_SESSION_AUTH": False,  # Отключаем авторизацию через сессию Django
+    "SECURITY_DEFINITIONS": {
+        "apiKey": {
+            "type": "apiKey",
+            "in": "cookie",  # Передавать куку
+            "name": "session_id",  # Имя куки (должно совпадать с тем, что ты устанавливаешь в set_cookie)
+        }
+    },
+    "PERSIST_AUTH": True,  # Сохранение аутентификации между запросами
+}
+
+
+HOST = "192.168.0.13"
